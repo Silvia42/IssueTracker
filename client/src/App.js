@@ -39,53 +39,47 @@ const userPreview = (user) => (
   <option value={user.id}>{user.username}</option>
 )
 
-const userList = (users) => (
-  <select> 
+const userList = (users, currentUserId, onChange) => (
+  <select value={currentUserId} onChange={(evnt) => onChange(evnt.target.value)}> 
     {users.map(userPreview)}
   </select>
 )
 
-// const newUserForm = () => (
-//   <form>
-//     <input type="text"   name="username" value="" placeholder="User Name"/>
-//     <input type="email"  name="email"    value="" placeholder="Email"/>
-//     <input type="submit"                 value="New User" />
-//   </form>
-// )
+class NewUserForm extends React.Component {
 
-class newUserForm extends React.Component {
-    state =     {
-        "userName": "",
-        "email"   : ""
+  state = 
+    { username: ""
+    , email   : ""
     }
-  
-    handleInput = (evnt) => {
-      let newUser={...this.state};  
-      newUser[evnt.target.name]=evnt.target.value
-      this.setState(newUser)
-    }
-  
-    handleSubmit = (evnt) => {
-      evnt.preventDefault();
-      this.props.addNewUser(this.state)
-    }
-  
-    render = () => (
-        <form onSubmit={this.handleSubmit}>
-            <input type="text"   name="username" value="" placeholder="User Name"/>
-            <input type="email"  name="email"    value="" placeholder="Email"/>
-            <input type="submit"                 value="New User" />
-        </form>
-    )
+
+  handleInput = (evnt) => {
+    let newUser = {...this.state};
+
+    newUser[evnt.target.name] = evnt.target.value;
+
+    this.setState(newUser)
   }
+
+  handleSubmit = (evnt) => {
+    evnt.preventDefault();
+
+    this.props.addNewUser(this.state)
+    this.setState({ username: "", email: ""})
+  }
+
+  render = () => (
+    <form onSubmit={this.handleSubmit}>
+      <input type="text"   name="username" onChange={this.handleInput} value={this.state.username} placeholder="User Name"/>
+      <input type="email"  name="email"    onChange={this.handleInput} value={this.state.email}    placeholder="Email"/>
+      <input type="submit"                 value="New User" />
+    </form>
+  )
+}
 
 class NewIssueForm extends React.Component {
   state = {
     description: ""
   }
-
-  correctEmail = (someString) => 
-  (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(someString))
 
   handleInput = (evnt) => {
     this.setState({description: evnt.target.value})
@@ -93,17 +87,15 @@ class NewIssueForm extends React.Component {
 
   handleSubmit = (evnt) => {
     evnt.preventDefault();
+
     this.props.addNewIssue(this.state.description)
     this.setState({ description: "" })
   }
 
   render = () => (
     <form onSubmit={this.handleSubmit}>
-      <input type="text"   name="username" onChange={this.handleInput} value={this.state.username} placeholder="User Name"/>
-      {/* <input type="email"  name="text"   pattern='/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/' onChange={this.handleInput} value={this.state.email}    placeholder="Email"/> */}
-      <input type="email"  name="text"   pattern='/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/' onChange={this.handleInput} value={this.state.email}    placeholder="Email"/>
-
-      <input type="submit"                 value="New User" />
+      <input type="text"   name="description" onChange={this.handleInput} value={this.state.description} placeholder="Description" />
+      <input type="submit"                    value="New Issue" />
     </form>
   )
 }
@@ -131,6 +123,46 @@ const testUsers =
     }
   }
 
+const getUsersFromServer = () => 
+  fetch('/api/user/')
+    .then(res => res.json())
+
+const getIssuesFromServer = () =>
+  fetch('/api/issue/')
+    .then(res => res.json())
+
+const objectFromListById = (users, issues) =>
+  //convert from an array of user objects to an
+  //object of user objects where the keys are user ids
+  users.reduce((obj, user) => { 
+    //get all issues belonging to the user
+    user.issues = issues.filter(issue => issue.user === user.id);
+    obj[user.id] = user; 
+    return obj; 
+  }, {})
+
+const getUsersAndIssuesFromServer = () =>
+  getUsersFromServer().then(users => 
+  getIssuesFromServer().then(issues =>
+      objectFromListById(users, issues)
+  ))
+
+const saveUserToServer = (newUser) => 
+  fetch('/api/user/',
+    { method  : "POST"
+    , headers : { "Content-Type": "application/json" }
+    , body    : JSON.stringify(newUser)
+    }
+  ).then(res => res.json())
+
+const saveIssueToServer = (newIssue) => 
+  fetch('/api/issue/',
+    { method  : "POST"
+    , headers : { "Content-Type": "application/json" }
+    , body    : JSON.stringify(newIssue)
+    }
+  ).then(res => res.json())
+
 class App extends React.Component {
 
   state = {
@@ -138,38 +170,49 @@ class App extends React.Component {
     users: testUsers
   }
 
+  componentDidMount = () => {
+    //saveUserToServer({username: "testUser", email: "foo@foobar.com"})
+    getUsersAndIssuesFromServer()
+      .then(users => {
+        this.setState({ users })
+      })
+  }
+
   getNextId = () =>
     //gets the max id from the isssues of the current user
     Math.max(...this.getCurrentUser().issues.map(issue => issue.id)) + 1
 
   addNewIssueCurrentUser = (description) => {
-    const newIssue = 
-      { description
-      , status: true
-      , id: this.getNextId()
-      , createdOn: new Date().toISOString()
-      }
+    saveIssueToServer({ description , status: true, user: this.state.currentUser })
+      .then(newIssue => {
 
-    let users = {...this.state.users};
+        let users = {...this.state.users};
 
-    users[this.state.currentUser].issues.push(newIssue);
+        users[this.state.currentUser].issues.push(newIssue);
 
-    this.setState({ users });
+        this.setState({ users });
+      })
+  }
+
+  getNextUserId = () =>
+    Math.max(...this.getAllUsers().map(user => user.id)) + 1
+
+  addNewUser = (newUserInfo) => {
+    saveUserToServer(newUserInfo)
+      .then(newUser => {
+        console.log(newUser);
+        newUser.issues = [];
+
+        let users = {...this.state.users};
+
+        users[newUser.id] = newUser;
+
+        this.setState({ users, currentUser: newUser.id });
+    })
   }
 
   getCurrentUser = () =>
     this.state.users[this.state.currentUser]
-
-  getNextUserId = () => Math.max(...this.getAllUsers().map(user => user.id)) + 1
-  
-  addNewUser = (newUser) => {
-    newUser.issues=[]
-    newUser.id = this.getNextUserId()
-    let users = {...this.state.users}
-    users[newUser.id]=newUser
-    this.setState({users})
-  }
-    
 
   getAllUsers = () =>
     Object.values(this.state.users)
@@ -177,17 +220,21 @@ class App extends React.Component {
   getAllIssues = () =>
     this.getAllUsers().flatMap(user => user.issues)
     //this.getAllUsers().map(user => user.issues).flat()
+  
+  setCurrentUser = (currentUser) => {
+    this.setState({ currentUser })
+  }
 
   render = () => (
     <div className="container">
       <aside className="sidebar">
-        <newUserForm/>
+        <NewUserForm addNewUser={this.addNewUser}/>
         <NewIssueForm addNewIssue={this.addNewIssueCurrentUser} />
         {recentIssues(this.getAllIssues())}
       </aside>
 
       <article className="mainContent">
-        {userList(this.getAllUsers())}
+        {userList(this.getAllUsers(), this.state.currentUser, this.setCurrentUser)}
         {userIssueList(this.getCurrentUser())}
       </article>
     </div>
@@ -195,6 +242,3 @@ class App extends React.Component {
 }
 
 export default App;
-
-
-
