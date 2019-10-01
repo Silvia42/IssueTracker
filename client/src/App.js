@@ -54,15 +54,12 @@ class NewUserForm extends React.Component {
 
   handleInput = (evnt) => {
     let newUser = {...this.state};
-
     newUser[evnt.target.name] = evnt.target.value;
-
     this.setState(newUser)
   }
 
   handleSubmit = (evnt) => {
     evnt.preventDefault();
-
     this.props.addNewUser(this.state)
     this.setState({ username: "", email: ""})
   }
@@ -98,7 +95,7 @@ class NewIssueForm extends React.Component {
       <input type="submit"                    value="New Issue" />
     </form>
   )
-}
+} // end of class NewIssueForm extends React.Component {
 
 const testUsers = 
   { 1: 
@@ -147,6 +144,13 @@ const getUsersAndIssuesFromServer = () =>
       objectFromListById(users, issues)
   ))
 
+const deleteUserFromServer = (userId) => 
+fetch('/api/user/'+userId.toString()+'/',
+{ method: "DELETE"
+}
+) 
+// .then(res => res.json())
+
 const saveUserToServer = (newUser) => 
   fetch('/api/user/',
     { method  : "POST"
@@ -171,7 +175,9 @@ class App extends React.Component {
   }
 
   componentDidMount = () => {
-    //saveUserToServer({username: "testUser", email: "foo@foobar.com"})
+    // saveUserToServer({userName: "testUser", email: "foo@foobar.com"})
+    // deleteUserFromServer(4)
+
     getUsersAndIssuesFromServer()
       .then(users => {
         this.setState({ users })
@@ -198,6 +204,11 @@ class App extends React.Component {
     Math.max(...this.getAllUsers().map(user => user.id)) + 1
 
   addNewUser = (newUserInfo) => {
+    newUserInfo=    {
+        "userName": newUserInfo.username,
+        "email": newUserInfo.email
+    } 
+    console.log(newUserInfo)  
     saveUserToServer(newUserInfo)
       .then(newUser => {
         console.log(newUser);
