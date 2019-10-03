@@ -1,18 +1,8 @@
-// Added React Router #RR#
-
 import React from 'react'
-import { Link, Route, Switch } from 'react-router-dom'; //#RR#
-import IssueDetail from './IssueDetail'; //#RR#
 import './App.css'
 
 const issuePreview = (issue) => (
-//   <li>{issue.id} - {issue.description}</li>
-//#RR#
-<li>
-<Link to={`/issue/${issue.id}`}>
-  {issue.id} - {issue.description}
-</Link>
-</li>
+  <li>{issue.id} - {issue.description}</li>
 )
 
 const issueList = (issues) => (
@@ -38,14 +28,12 @@ const orderByCreatedOn = (issue1, issue2) => {
 const recentIssues = (allIssues) => 
   issueList(allIssues.sort(orderByCreatedOn).slice(0, 5))
 
-//#RR#
-// const issueDetails = (issue) => (
-//   <div>
-//     {issue.id} - {issue.description}
-//     <button>{issue.status ? "Close" : "Open"}</button>
-//   </div>
-// )
-//#RR#
+const issueDetails = (issue) => (
+  <div>
+    {issue.id} - {issue.description}
+    <button>{issue.status ? "Close" : "Open"}</button>
+  </div>
+)
 
 const userPreview = (user) => (
   <option value={user.id}>{user.username}</option>
@@ -109,58 +97,28 @@ class NewIssueForm extends React.Component {
   )
 } // end of class NewIssueForm extends React.Component {
 
-    const testUsers = {
-        1: {
-          id: 1,
-          email: 'foo@foo.com',
-          username: 'Bob',
-          issues: [
-            {
-              description: 'a test issue 2',
-              status: true,
-              id: 2,
-              createdOn: '2019-09-28T15:05:18.180058Z'
-            },
-            {
-              description: 'a test issue',
-              status: true,
-              id: 1,
-              createdOn: '2019-09-27T15:05:18.180058Z'
-            },
-            {
-              description: 'a test issue 3',
-              status: true,
-              id: 3,
-              createdOn: '2019-09-29T15:05:18.180058Z'
-            }
-          ]
-        },
-        7: {
-          id: 7,
-          email: 'bar@bar.com',
-          username: 'Joe',
-          issues: [
-            {
-              description: 'a joes test issue 2',
-              status: true,
-              id: 2,
-              createdOn: '2019-09-28T15:05:18.180058Z'
-            },
-            {
-              description: 'a joes test issue',
-              status: true,
-              id: 1,
-              createdOn: '2019-09-27T15:05:18.180058Z'
-            },
-            {
-              description: 'a joes test issue 3',
-              status: true,
-              id: 3,
-              createdOn: '2019-09-29T15:05:18.180058Z'
-            }
-          ]
-        }
-      };
+const testUsers = 
+  { 1: 
+    { id : 1
+    , email  : "foo@foo.com"
+    , username: "Bob"
+    , issues : 
+        [ {description: "a test issue 2", status: true, id: 2, createdOn: "2019-09-28T15:05:18.180058Z"}
+        , {description: "a test issue"  , status: true, id: 1, createdOn: "2019-09-27T15:05:18.180058Z"}
+        , {description: "a test issue 3", status: true, id: 3, createdOn: "2019-09-29T15:05:18.180058Z"}
+        ]
+    }
+  , 7: 
+    { id : 7
+    , email  : "bar@bar.com"
+    , username: "Joe"
+    , issues : 
+        [ {description: "a joes test issue 2", status: true, id: 2, createdOn: "2019-09-28T15:05:18.180058Z"}
+        , {description: "a joes test issue"  , status: true, id: 1, createdOn: "2019-09-27T15:05:18.180058Z"}
+        , {description: "a joes test issue 3", status: true, id: 3, createdOn: "2019-09-29T15:05:18.180058Z"}
+        ]
+    }
+  }
 
 const getUsersFromServer = () => 
   fetch('/api/user/')
@@ -191,7 +149,7 @@ fetch('/api/user/'+userId.toString()+'/',
 { method: "DELETE"
 }
 ) 
-// .then(res => res.json())  /// this is not needed
+// .then(res => res.json())
 
 const saveUserToServer = (newUser) => 
   fetch('/api/user/',
@@ -277,54 +235,21 @@ class App extends React.Component {
   setCurrentUser = (currentUser) => {
     this.setState({ currentUser })
   }
-////#RR# 
-//   render = () => (
-//     <div className="container">
-//       <aside className="sidebar">
-//         <NewUserForm addNewUser={this.addNewUser}/>
-//         <NewIssueForm addNewIssue={this.addNewIssueCurrentUser} />
-//         {recentIssues(this.getAllIssues())}
-//       </aside>
-//
-//       <article className="mainContent">
-//         {userList(this.getAllUsers(), this.state.currentUser, this.setCurrentUser)}
-//         {userIssueList(this.getCurrentUser())}
-//       </article>
-//     </div>
-//   )
-////#RR# This is replaced with a code for Router
 
-render = () => (
+  render = () => (
     <div className="container">
       <aside className="sidebar">
-        <NewUserForm addNewUser={this.addNewUser} />
+        <NewUserForm addNewUser={this.addNewUser}/>
         <NewIssueForm addNewIssue={this.addNewIssueCurrentUser} />
         {recentIssues(this.getAllIssues())}
       </aside>
 
       <article className="mainContent">
-        <Switch>
-          <Route
-            path="/"
-            exact
-            render={() => (
-              <div>
-                {userList(
-                  this.getAllUsers(),
-                  this.state.currentUser,
-                  this.setCurrentUser
-                )}
-                {userIssueList(this.getCurrentUser())}
-              </div>
-            )}
-          />
-          <Route path="/issue/:id" component={IssueDetail} />
-        </Switch>
+        {userList(this.getAllUsers(), this.state.currentUser, this.setCurrentUser)}
+        {userIssueList(this.getCurrentUser())}
       </article>
     </div>
-  );
-
-
+  )
 }
 
 export default App;

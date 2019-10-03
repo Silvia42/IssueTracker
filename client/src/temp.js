@@ -56,3 +56,5 @@ console.log(ccc)
 //     alert("You have entered an invalid email address!")
 //     return (false)
 // }
+
+console.log(0.1 + 0.2 === 0.3)
